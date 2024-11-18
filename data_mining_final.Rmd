@@ -23,92 +23,88 @@ police_2023 <- read.csv("Police_Incidents_2023.csv")
 
 ```{r}
 police_area <- bind_rows(police_2021, police_2022, police_2023)
+police_area <- police_area
 ```
 
+clustering/heat map
+```{r}
+library("factoextra")
+library("cluster")
+
+```
+
+```{r}
+
+numeric_columns <- sapply(police_area, is.numeric)  # Returns TRUE for numeric columns
+
+# Print the names of numeric columns
+print(names(police_area)[numeric_columns])
+
+area_clean <- police_area |> select("X","Y","reportedTime","beginTime","UCRCode",
+                                    "centergbsid","centerLong","centerLat",
+                                    "centerX","centerY","OBJECTID", "precinct",
+                                    "neighborhood", "offense") |> drop_na()
+
+```
+
+Chi-squared based on offense vs precinct
+
+```{r}
+contingency_table2 <- table(area_clean$offense, area_clean$precinct)
+
+```
+
+```{r}
+chi_squared_result <- chisq.test(contingency_table2)
+
+# View the result
+chi_squared_result
+```
+anova on offense vs precinct
+```{r}
+result <- aov(area_clean$UCRCode ~ area_clean$neighborhood, data = area_clean)
+
+# Check the results of the ANOVA
+summary(result)
+```
 
 
 
 
 ```{r}
-police_raw <- read.csv("Police_Use_of_Force.csv")
-minn_pop <- read.csv("minneapolis_population.csv")
+set.seed(2)
+km.out <-  kmeans((area_clean)[numeric_columns], 3, nstart = 20)
 ```
 
 ```{r}
-police_raw <- police_raw |> filter(SubjectRoleNumber != 0)
-```
-
-```{r}
-police_force <- police_raw |> filter(ForceType == "Bodily Force") |>
-  filter(ForceTypeAction != "Knee") |> filter(ForceTypeAction != "Slap") |>
-  filter(ForceTypeAction != "Body Weight Pin") |> filter(ForceTypeAction != "Punch") |>
-  filter(ForceTypeAction != "LVNR1") |> filter(ForceTypeAction != "LVNR2") |>
-  filter(ForceTypeAction != "LVNR3") |> 
-  filter(ForceTypeAction != "Neck Restraint: subject did not lose conciousness") |>
-  filter(ForceTypeAction != "Neck Restraint: subject lost conciousness")
-  
-```
-
-```{r}
-police_force_simple <- police_force |> select(ForceTypeAction, Race, Sex, EventAge) |>
-  filter(Race != "Pacific Islander") |> filter(Race != "Other / Mixed Race") |> 
-  filter(Race != "Unknown") |> filter(Race != "not recorded")
+fviz_cluster(km.out, data = area_clean[numeric_columns],
+             palette=c("red", "blue", "darkgreen"),
+             ellipse.type = "euclid",
+             star.plot = T,
+             repel = T,
+             ggtheme = theme())
 ```
 
 
-```{r}
-police_force_pct <- police_force_simple %>%
-    group_by(Race,ForceTypeAction) %>%
-    summarize(N = n()) %>%
-    mutate( freq = N / sum(N),
-           pct = round((freq*100), 0))
-```
-
-```{r}
-ggplot(police_force_pct, aes(x = Race, y = pct , fill = ForceTypeAction)) + 
-  geom_col(position="dodge2") +
-    labs(x = "Race", y = "percent", fill = "Bodily Force" ) +
-  theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-```
 
 
-```{r}
-ggplot(police_force_simple, aes(x = Race)) +
-  geom_bar(aes(y = ..prop.., group = 1)) +
-  theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-```
 
 
-```{r}
-ggplot(police_force_simple, aes(x = ForceTypeAction)) +
-  geom_bar(aes(y = ..prop.., group = 1)) +
-  theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-```
 
-```{r}
-total_amount <- sum(minn_pop$population)
 
-# Calculate percentage for each race
-minn_pop$percent <- (minn_pop$population / total_amount) * 100
-```
 
-```{r}
-ggplot(minn_pop, aes(x = race, y = percent)) +
-  geom_col(position = "dodge") +
-  theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-```
-Chi-Square
-```{r}
-contingency_table <- table(police_force_simple$ForceTypeAction, police_force_simple$Race)
 
-# View the contingency table
-print(contingency_table)
-```
 
-```{r}
-fisher_result <- fisher.test(contingency_table, simulate.p.value = TRUE)
-print(fisher_result)
-```
+
+
+
+
+
+
+
+
+
+
 
 
 

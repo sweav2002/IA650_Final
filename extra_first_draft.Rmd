@@ -1,0 +1,98 @@
+---
+title: "extra_code_first_draft"
+output: html_document
+date: "2024-11-18"
+---
+
+```{r}
+library(ggplot2)
+library(readr)
+library(readxl)
+library(corrplot)
+library(tidyr)
+library(dplyr)
+```
+
+
+```{r}
+police_raw <- read.csv("Police_Use_of_Force.csv")
+#minn_pop <- read.csv("minneapolis_population.csv")
+```
+
+```{r}
+police_raw <- police_raw |> filter(SubjectRoleNumber != 0)
+```
+
+```{r}
+police_force <- police_raw |> filter(ForceType == "Bodily Force") |>
+  filter(ForceTypeAction != "Knee") |> filter(ForceTypeAction != "Slap") |>
+  filter(ForceTypeAction != "Body Weight Pin") |> filter(ForceTypeAction != "Punch") |>
+  filter(ForceTypeAction != "LVNR1") |> filter(ForceTypeAction != "LVNR2") |>
+  filter(ForceTypeAction != "LVNR3") |> 
+  filter(ForceTypeAction != "Neck Restraint: subject did not lose conciousness") |>
+  filter(ForceTypeAction != "Neck Restraint: subject lost conciousness")
+  
+```
+
+```{r}
+police_force_simple <- police_force |> select(ForceTypeAction, Race, Sex, EventAge) |>
+  filter(Race != "Pacific Islander") |> filter(Race != "Other / Mixed Race") |> 
+  filter(Race != "Unknown") |> filter(Race != "not recorded")
+```
+
+
+```{r}
+police_force_pct <- police_force_simple %>%
+    group_by(Race,ForceTypeAction) %>%
+    summarize(N = n()) %>%
+    mutate( freq = N / sum(N),
+           pct = round((freq*100), 0))
+```
+
+```{r}
+ggplot(police_force_pct, aes(x = Race, y = pct , fill = ForceTypeAction)) + 
+  geom_col(position="dodge2") +
+    labs(x = "Race", y = "percent", fill = "Bodily Force" ) +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+
+```{r}
+ggplot(police_force_simple, aes(x = Race)) +
+  geom_bar(aes(y = ..prop.., group = 1)) +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+
+```{r}
+#ggplot(police_force_simple, aes(x = ForceTypeAction)) +
+  #geom_bar(aes(y = ..prop.., group = 1)) +
+  #theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+```{r}
+#total_amount <- sum(minn_pop$population)
+
+# Calculate percentage for each race
+#minn_pop$percent <- (minn_pop$population / total_amount) * 100
+```
+
+```{r}
+ggplot(minn_pop, aes(x = race, y = percent)) +
+  geom_col(position = "dodge") +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+Chi-Square
+```{r}
+contingency_table <- table(police_force_simple$ForceTypeAction, police_force_simple$Race)
+
+# View the contingency table
+print(contingency_table)
+```
+
+Fisher test
+```{r}
+fisher_result <- fisher.test(contingency_table, simulate.p.value = TRUE)
+print(fisher_result)
+```
