@@ -26,6 +26,7 @@ police_area <- bind_rows(police_2021, police_2022, police_2023)
 police_area <- police_area
 ```
 
+
 clustering/heat map
 ```{r}
 library("factoextra")
@@ -48,7 +49,6 @@ area_clean <- police_area |> select("X","Y","reportedTime","beginTime","UCRCode"
 ```
 
 Chi-squared based on offense vs precinct
-
 ```{r}
 contingency_table2 <- table(area_clean$offense, area_clean$precinct)
 
@@ -60,7 +60,7 @@ chi_squared_result <- chisq.test(contingency_table2)
 # View the result
 chi_squared_result
 ```
-anova on offense vs precinct
+anova on offense vs neighborhood
 ```{r}
 result <- aov(area_clean$UCRCode ~ area_clean$neighborhood, data = area_clean)
 
@@ -69,15 +69,17 @@ summary(result)
 ```
 
 
-
-
 ```{r}
-set.seed(2)
-km.out <-  kmeans((area_clean)[numeric_columns], 3, nstart = 20)
+cluster_data <- area_clean |> select("centerLong", "centerLat", "UCRCode")
 ```
 
 ```{r}
-fviz_cluster(km.out, data = area_clean[numeric_columns],
+set.seed(2)
+km.out <-  kmeans(cluster_data, 3, nstart = 5)
+```
+
+```{r}
+fviz_cluster(km.out, data = cluster_data,
              palette=c("red", "blue", "darkgreen"),
              ellipse.type = "euclid",
              star.plot = T,
@@ -86,7 +88,39 @@ fviz_cluster(km.out, data = area_clean[numeric_columns],
 ```
 
 
+```{r}
+library(gapminder)
+library(here)
+library(tidyverse)
+library(ggrepel)
+library(socviz)
+library(mapproj)
+```
 
+
+```{r}
+library(ggplot2)
+library(usmap)
+
+cluster_assignments <- km.out$cluster
+
+classification_df <- data.frame(state=tolower(names(cluster_assignments)),
+                                cluster=as.factor(as.numeric(cluster_assignments)))
+
+state_plot <- plot_usmap(regions="states", data=classification_df, values="cluster") + 
+  labs(title="US States",subtitle="Clusters by Arrest Rates.") + 
+  scale_colour_hue() + 
+  theme( panel.background = element_rect(color = "black", fill = "white"), legend.position="right") + 
+  guides(fill=guide_legend(title=""))
+
+state_plot
+```
+
+
+```{r}
+
+us_states_elec <- left_join(us_states,election)
+```
 
 
 
