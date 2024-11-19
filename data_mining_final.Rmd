@@ -67,7 +67,7 @@ result <- aov(area_clean$UCRCode ~ area_clean$neighborhood, data = area_clean)
 # Check the results of the ANOVA
 summary(result)
 ```
-
+# k-clustering visuals are not loading 
 
 ```{r}
 cluster_data <- area_clean |> select("centerLong", "centerLat", "UCRCode")
@@ -87,6 +87,10 @@ fviz_cluster(km.out, data = cluster_data,
              ggtheme = theme())
 ```
 
+```{r}
+fviz_nbclust(cluster_data, kmeans, method = "wss")
+```
+
 
 ```{r}
 library(gapminder)
@@ -97,7 +101,7 @@ library(socviz)
 library(mapproj)
 ```
 
-
+## code to start the map from info vis class
 ```{r}
 library(ggplot2)
 library(usmap)
