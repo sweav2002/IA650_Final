@@ -70,26 +70,43 @@ summary(result)
 # k-clustering visuals are not loading 
 
 ```{r}
-cluster_data <- area_clean |> select("centerLong", "centerLat", "UCRCode")
+area_clean <- area_clean%>%
+  mutate(neighborhood= ifelse(neighborhood == "", "Unknown", neighborhood))
+
+one_hot_encoded <- area_clean%>%
+  mutate(neighborhood = factor(neighborhood)) %>%  # Convert 'category' to a factor
+  tidyr::pivot_wider(names_from = neighborhood, values_from = neighborhood, 
+                     values_fn = length, values_fill = list(neighborhood = 0)) %>%
+  mutate(offense = factor(offense)) %>%  #
+  tidyr::pivot_wider(names_from = offense, values_from = offense, 
+                     values_fn = length, values_fill = list(offense = 0))
+
+```
+
+
+
+
+```{r}
+cluster_data <- one_hot_encoded |> select(-X, -Y, -reportedTime, -beginTime,
+                                          -centergbsid, -OBJECTID, -precinct)
 ```
 
 ```{r}
-set.seed(2)
-km.out <-  kmeans(cluster_data, 3, nstart = 5)
+km.out <-  kmeans(cluster_data, 4, nstart = 20)
 ```
 
 ```{r}
 fviz_cluster(km.out, data = cluster_data,
-             palette=c("red", "blue", "darkgreen"),
-             ellipse.type = "euclid",
-             star.plot = T,
-             repel = T,
+             palette=c("blue", "darkgreen", "pink", "purple"),
+             ellipse.type = "norm",
              ggtheme = theme())
 ```
 
 ```{r}
-fviz_nbclust(cluster_data, kmeans, method = "wss")
+fviz_nbclust(cluster_data, FUNcluster = kmeans, method = "wss")
 ```
+
+
 
 
 ```{r}
@@ -102,22 +119,25 @@ library(mapproj)
 ```
 
 ## code to start the map from info vis class
+
 ```{r}
 library(ggplot2)
 library(usmap)
 
+
 cluster_assignments <- km.out$cluster
 
-classification_df <- data.frame(state=tolower(names(cluster_assignments)),
+classification_df <- data.frame(UCRCode=as.factor(as.numeric(cluster_assignments)),
                                 cluster=as.factor(as.numeric(cluster_assignments)))
 
-state_plot <- plot_usmap(regions="states", data=classification_df, values="cluster") + 
-  labs(title="US States",subtitle="Clusters by Arrest Rates.") + 
+minn_plot <- plot_usmap(regions="counties",include =c("053", "Hennepin"), 
+                        data=classification_df, values="cluster") + 
+  labs(title="Minneapolis",subtitle="Clusters by Arrest Rates.") + 
   scale_colour_hue() + 
-  theme( panel.background = element_rect(color = "black", fill = "white"), legend.position="right") + 
+  theme(panel.background = element_rect(color = "black", fill = "white"), legend.position="right") + 
   guides(fill=guide_legend(title=""))
 
-state_plot
+minn_plot
 ```
 
 
