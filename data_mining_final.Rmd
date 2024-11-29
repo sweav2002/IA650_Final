@@ -121,29 +121,58 @@ library(mapproj)
 ## code to start the map from info vis class
 
 ```{r}
-library(ggplot2)
-library(usmap)
-
-
 cluster_assignments <- km.out$cluster
 
-classification_df <- data.frame(UCRCode=as.factor(as.numeric(cluster_assignments)),
-                                cluster=as.factor(as.numeric(cluster_assignments)))
+coords <- cluster_data |> select(centerLong, centerLat)
 
-minn_plot <- plot_usmap(regions="counties",include =c("053", "Hennepin"), 
-                        data=classification_df, values="cluster") + 
-  labs(title="Minneapolis",subtitle="Clusters by Arrest Rates.") + 
-  scale_colour_hue() + 
-  theme(panel.background = element_rect(color = "black", fill = "white"), legend.position="right") + 
-  guides(fill=guide_legend(title=""))
+coords$cluster <-km.out$cluster
+```
 
-minn_plot
+
+
+
+```{r}
+library(tigris)
+library(ggplot2)
+library(sf)
+```
+
+```{r}
+# Download the shapefile for counties in Minnesota
+mn_counties <- counties(state = "MN", cb = TRUE)  # cb = TRUE gets a simplified version of the shapefile
+
+# Convert to simple features (sf) format for easier plotting with ggplot2
+mn_counties_sf <- st_as_sf(mn_counties)
+
+# Filter for Hennepin County
+hennepin_sf <- mn_counties_sf[mn_counties_sf$NAME == "Hennepin", ]
+
+# View the first few rows of Hennepin County data
+head(hennepin_sf)
+```
+
+```{r}
+# Plot the map of Hennepin County
+ggplot(data = hennepin_sf) +
+  geom_sf() +
+  ggtitle("Map of Hennepin County, Minnesota") +
+  geom_point(data = coords, aes(x = centerLong, y = centerLat, 
+                                       color = factor(cluster)), size = 3) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
 ```
 
 
 ```{r}
-
-us_states_elec <- left_join(us_states,election)
+ggplot(data = hennepin_sf) +
+  geom_sf() +
+  ggtitle("Zoomed-in Map of Hennepin County") +
+   geom_point(data = coords, aes(x = centerLong, y = centerLat, 
+                                       color = factor(cluster)), size = 3) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  coord_sf(xlim = c(-93.8, -93.3), ylim = c(44.8, 45.1))
 ```
 
 
