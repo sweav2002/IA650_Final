@@ -163,6 +163,7 @@ ggplot(data = hennepin_sf) +
 
 ```
 
+# Final map
 
 ```{r}
 ggplot(data = hennepin_sf) +
@@ -172,7 +173,7 @@ ggplot(data = hennepin_sf) +
                                        color = factor(cluster)), size = 3) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5)) +
-  coord_sf(xlim = c(-93.8, -93.3), ylim = c(44.8, 45.1))
+  coord_sf(xlim = c(-93.45, -93.15), ylim = c(44.85, 45.07))
 ```
 
 
